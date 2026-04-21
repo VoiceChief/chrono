@@ -1,6 +1,4 @@
-from pathlib import Path
-
-fixed = r"""const sourceText = document.getElementById('sourceText');
+const sourceText = document.getElementById('sourceText');
 const clearBtn = document.getElementById('clearBtn');
 const sampleBtn = document.getElementById('sampleBtn');
 const modeButtons = [...document.querySelectorAll('.mode-chip')];
@@ -172,8 +170,11 @@ function numberToWords(num) {
 
   const unitsMale = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
   const unitsFemale = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+
   const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+
   const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+
   const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
 
   const scales = [
@@ -194,6 +195,7 @@ function numberToWords(num) {
 
   function triadToWords(n, gender) {
     const result = [];
+
     const h = Math.floor(n / 100);
     const t = Math.floor((n % 100) / 10);
     const u = n % 10;
@@ -218,7 +220,8 @@ function numberToWords(num) {
     .map(x => x.split('').reverse().join(''))
     .reverse();
 
-  if (!chunks || chunks.length > scales.length) {
+  // защита: если число слишком большое, просто не разворачиваем его
+  if (chunks.length > scales.length) {
     return num;
   }
 
@@ -246,10 +249,81 @@ function numberToWords(num) {
   return parts.join(' ').trim();
 }
 
-function prepareTextForTiming(text) {
-  return text.replace(/\b\d+\b/g, num => {
-    return numberToWords(num);
+function numberToWords(num) {
+  num = String(num);
+  if (!/^\d+$/.test(num)) return num;
+  if (num === '0') return 'ноль';
+
+  const unitsMale = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+  const unitsFemale = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+
+  const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+
+  const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+
+  const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+  const scales = [
+    ['', '', '', 'm'],
+    ['тысяча', 'тысячи', 'тысяч', 'f'],
+    ['миллион', 'миллиона', 'миллионов', 'm'],
+    ['миллиард', 'миллиарда', 'миллиардов', 'm']
+  ];
+
+  function getPlural(n, one, two, five) {
+    n = n % 100;
+    if (n >= 11 && n <= 14) return five;
+    n = n % 10;
+    if (n === 1) return one;
+    if (n >= 2 && n <= 4) return two;
+    return five;
+  }
+
+  function triadToWords(n, gender) {
+    const result = [];
+
+    const h = Math.floor(n / 100);
+    const t = Math.floor((n % 100) / 10);
+    const u = n % 10;
+
+    if (h) result.push(hundreds[h]);
+
+    if (t === 1) {
+      result.push(teens[u]);
+    } else {
+      if (t) result.push(tens[t]);
+      if (u) result.push(gender === 'f' ? unitsFemale[u] : unitsMale[u]);
+    }
+
+    return result;
+  }
+
+  const parts = [];
+
+  const chunks = num
+    .split('')
+    .reverse()
+    .join('')
+    .match(/.{1,3}/g)
+    .map(x => x.split('').reverse().join(''))
+    .reverse();
+
+  chunks.forEach((chunk, i) => {
+    const n = parseInt(chunk, 10);
+    if (!n) return;
+
+    const scaleIndex = chunks.length - i - 1;
+    const scale = scales[scaleIndex];
+
+    const words = triadToWords(n, scale[3]);
+    parts.push(...words);
+
+    if (scaleIndex > 0) {
+      parts.push(getPlural(n, scale[0], scale[1], scale[2]));
+    }
   });
+
+  return parts.join(' ').trim();
 }
 
 modeButtons.forEach(button => {
@@ -278,7 +352,3 @@ sampleBtn.addEventListener('click', () => {
 
 updateDetails();
 render();
-"""
-path = Path('/mnt/data/fixed-script.js')
-path.write_text(fixed, encoding='utf-8')
-print(path)
