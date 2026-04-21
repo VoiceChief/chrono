@@ -1,4 +1,6 @@
-const sourceText = document.getElementById('sourceText');
+from pathlib import Path
+
+fixed = r"""const sourceText = document.getElementById('sourceText');
 const clearBtn = document.getElementById('clearBtn');
 const sampleBtn = document.getElementById('sampleBtn');
 const modeButtons = [...document.querySelectorAll('.mode-chip')];
@@ -170,11 +172,8 @@ function numberToWords(num) {
 
   const unitsMale = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
   const unitsFemale = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
-
   const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
-
   const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
-
   const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
 
   const scales = [
@@ -195,7 +194,6 @@ function numberToWords(num) {
 
   function triadToWords(n, gender) {
     const result = [];
-
     const h = Math.floor(n / 100);
     const t = Math.floor((n % 100) / 10);
     const u = n % 10;
@@ -220,8 +218,7 @@ function numberToWords(num) {
     .map(x => x.split('').reverse().join(''))
     .reverse();
 
-  // защита: если число слишком большое, просто не разворачиваем его
-  if (chunks.length > scales.length) {
+  if (!chunks || chunks.length > scales.length) {
     return num;
   }
 
@@ -247,6 +244,12 @@ function numberToWords(num) {
   });
 
   return parts.join(' ').trim();
+}
+
+function prepareTextForTiming(text) {
+  return text.replace(/\b\d+\b/g, num => {
+    return numberToWords(num);
+  });
 }
 
 modeButtons.forEach(button => {
@@ -275,3 +278,7 @@ sampleBtn.addEventListener('click', () => {
 
 updateDetails();
 render();
+"""
+path = Path('/mnt/data/fixed-script.js')
+path.write_text(fixed, encoding='utf-8')
+print(path)
