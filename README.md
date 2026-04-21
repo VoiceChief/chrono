@@ -1,1 +1,1 @@
-**https://voicechief.github.io/voicechief-chrono/**
+**https://voicechief.github.io/chrono/**
