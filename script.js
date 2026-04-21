@@ -2,8 +2,6 @@ const sourceText = document.getElementById('sourceText');
 const clearBtn = document.getElementById('clearBtn');
 const sampleBtn = document.getElementById('sampleBtn');
 const modeButtons = [...document.querySelectorAll('.mode-chip')];
-const numbersAsWordsToggle = document.getElementById('numbersAsWordsToggle');
-const numbersHelper = document.getElementById('numbersHelper');
 
 const timingMain = document.getElementById('timingMain');
 const timingFast = document.getElementById('timingFast');
@@ -15,15 +13,14 @@ const pagesCount = document.getElementById('pagesCount');
 const formulaNote = document.getElementById('formulaNote');
 const detailsBadge = document.getElementById('detailsBadge');
 const detailsList = document.getElementById('detailsList');
-const detailsSubnote = document.getElementById('detailsSubnote');
 
 let currentMode = 'kupigolos';
 
-const sampleText = `Сегодня особенно важно, чтобы голос бренда звучал уверенно, чисто и узнаваемо.
+const sampleText = `Сегодня особенно важно, чтобы голос бренда звучал уверенно, чисто и узнаваемо. Хорошая озвучка помогает удерживать внимание, повышать доверие и усиливать впечатление от ролика.
 
-Если вам нужен диктор для рекламного ролика, презентации или обучающего курса, важно заранее понимать примерный хронометраж текста.
+Если вам нужен диктор для рекламного ролика, презентации, видео на сайт или обучающего курса, важно заранее понимать примерный хронометраж текста. Это помогает корректно выстроить монтаж, подобрать темп подачи и избежать перегрузки сценария лишними словами.
 
-А 123 версии текста и 2025 правок лучше заранее сократить.`;
+Профессиональная озвучка — это не только красивый тембр, но и точное попадание в задачу проекта.`;
 
 const MODE_CONFIG = {
   kupigolos: {
@@ -36,9 +33,8 @@ const MODE_CONFIG = {
       'Страницы A4 ≈ symbols / 2000'
     ],
     calc(text) {
-      const prepared = prepareTextForTiming(text, numbersAsWordsToggle.checked);
       const symbols = text.length;
-      const cleanSymbols = prepared.replace(/\s/g, '').length;
+      const cleanSymbols = text.replace(/\s/g, '').length;
       const words = countWords(text);
 
       return {
@@ -48,8 +44,7 @@ const MODE_CONFIG = {
         pages: +(symbols / 2000).toFixed(1),
         timing: smartRound(cleanSymbols / 14.1),
         fast: smartRound(cleanSymbols / 16.4),
-        slow: smartRound(cleanSymbols / 11.8),
-        preparedPreview: buildPreparedPreview(text, prepared)
+        slow: smartRound(cleanSymbols / 11.8)
       };
     }
   },
@@ -63,12 +58,11 @@ const MODE_CONFIG = {
       'Страницы A4 всё так же считаются по symbols / 2000'
     ],
     calc(text) {
-      const prepared = prepareTextForTiming(text, numbersAsWordsToggle.checked);
       const symbols = text.length;
-      const cleanSymbols = prepared.replace(/\s/g, '').length;
+      const cleanSymbols = text.replace(/\s/g, '').length;
       const words = countWords(text);
 
-      const score = calculateSmartScore(prepared, words);
+      const score = calculateSmartScore(text, words);
       let cpsMain = 14.2;
       let cpsFast = 16.6;
       let cpsSlow = 11.9;
@@ -94,8 +88,7 @@ const MODE_CONFIG = {
         pages: +(symbols / 2000).toFixed(1),
         timing: smartRound(cleanSymbols / cpsMain),
         fast: smartRound(cleanSymbols / cpsFast),
-        slow: smartRound(cleanSymbols / cpsSlow),
-        preparedPreview: buildPreparedPreview(text, prepared)
+        slow: smartRound(cleanSymbols / cpsSlow)
       };
     }
   }
@@ -108,13 +101,6 @@ function countWords(text) {
 function smartRound(value) {
   if (!Number.isFinite(value) || value <= 0) return 0;
   return Math.max(1, Math.round(value));
-}
-
-function formatTime(seconds) {
-  if (!seconds || seconds < 60) return `${seconds || 0} сек`;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return secs ? `${mins} мин ${secs} сек` : `${mins} мин`;
 }
 
 function calculateSmartScore(text, words) {
@@ -142,113 +128,18 @@ function calculateSmartScore(text, words) {
   return score;
 }
 
-function buildPreparedPreview(original, prepared) {
-  if (original === prepared) return 'Цифры не влияют на расчёт в этом тексте.';
-  return `Для расчёта цифры развёрнуты в словесную форму. Пример: ${prepared.slice(0, 120)}${prepared.length > 120 ? '…' : ''}`;
+function formatTime(seconds) {
+  if (!seconds || seconds < 60) return `${seconds || 0} сек`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return secs ? `${mins} мин ${secs} сек` : `${mins} мин`;
 }
 
-function prepareTextForTiming(text, expandNumbers) {
-  if (!expandNumbers) return text;
-  let prepared = text;
-
-  prepared = prepared.replace(/№\s*(\d+)/g, (_, num) => `номер ${numberToRussianWords(num)}`);
-  prepared = prepared.replace(/\b\d[\d ]*\b/g, match => {
-    const digits = match.replace(/\s+/g, '');
-    if (!/^\d+$/.test(digits)) return match;
-    return numberToRussianWords(digits);
-  });
-
-  return prepared;
-}
-
-function numberToRussianWords(input) {
-  const raw = String(input).replace(/\s+/g, '');
-  if (!/^\d+$/.test(raw)) return input;
-
-  const normalized = raw.replace(/^0+(?=\d)/, '') || '0';
-  if (normalized === '0') return 'ноль';
-
-  const groups = [];
-  for (let i = normalized.length; i > 0; i -= 3) {
-    groups.unshift(normalized.slice(Math.max(0, i - 3), i));
-  }
-
-  const scales = [
-    { one: '', two: '', five: '', gender: 'm' },
-    { one: 'тысяча', two: 'тысячи', five: 'тысяч', gender: 'f' },
-    { one: 'миллион', two: 'миллиона', five: 'миллионов', gender: 'm' },
-    { one: 'миллиард', two: 'миллиарда', five: 'миллиардов', gender: 'm' },
-    { one: 'триллион', two: 'триллиона', five: 'триллионов', gender: 'm' }
-  ];
-
-  if (groups.length > scales.length) return raw;
-
-  const words = [];
-  groups.forEach((group, index) => {
-    const n = parseInt(group, 10);
-    if (!n) return;
-
-    const scaleIndex = groups.length - 1 - index;
-    const gender = scales[scaleIndex].gender;
-    const triadWords = triadToWords(n, gender);
-    if (triadWords.length) words.push(...triadWords);
-
-    if (scaleIndex > 0) {
-      words.push(getPluralForm(n, scales[scaleIndex].one, scales[scaleIndex].two, scales[scaleIndex].five));
-    }
-  });
-
-  return words.join(' ').replace(/\s+/g, ' ').trim();
-}
-
-function triadToWords(n, gender = 'm') {
-  const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
-  const tens = ['', 'десять', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
-  const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
-  const unitsMale = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
-  const unitsFemale = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
-
-  const result = [];
-  const h = Math.floor(n / 100);
-  const t = Math.floor((n % 100) / 10);
-  const u = n % 10;
-
-  if (h) result.push(hundreds[h]);
-
-  const lastTwo = n % 100;
-  if (lastTwo >= 10 && lastTwo <= 19) {
-    result.push(teens[lastTwo - 10]);
-    return result;
-  }
-
-  if (t) result.push(tens[t]);
-  if (u) result.push((gender === 'f' ? unitsFemale : unitsMale)[u]);
-
-  return result;
-}
-
-function getPluralForm(n, one, two, five) {
-  const lastTwo = n % 100;
-  const last = n % 10;
-  if (lastTwo >= 11 && lastTwo <= 14) return five;
-  if (last === 1) return one;
-  if (last >= 2 && last <= 4) return two;
-  return five;
-}
-
-function updateDetails(result) {
+function updateDetails() {
   const mode = MODE_CONFIG[currentMode];
   formulaNote.textContent = mode.note;
   detailsBadge.textContent = mode.label;
   detailsList.innerHTML = mode.details.map(item => `<li>${item}</li>`).join('');
-
-  if (numbersAsWordsToggle.checked) {
-    detailsSubnote.textContent = result?.preparedPreview || 'Для расчёта числа разворачиваются в слова, но сам текст не меняется.';
-    numbersHelper.textContent = 'Например: 123 для расчёта считается как «сто двадцать три», но сам текст в поле не меняется.';
-  } else {
-    detailsSubnote.textContent = 'Опция учёта цифр как слов выключена: числа считаются по обычным символам.';
-    numbersHelper.textContent = 'Сейчас цифры считаются как обычные символы. Можно включить учёт чисел как слов.';
-  }
 }
 
 function render() {
@@ -263,8 +154,6 @@ function render() {
   symbolsCount.textContent = result.symbols.toLocaleString('ru-RU');
   cleanSymbolsCount.textContent = result.cleanSymbols.toLocaleString('ru-RU');
   pagesCount.textContent = result.pages.toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-  updateDetails(result);
 }
 
 modeButtons.forEach(button => {
@@ -272,12 +161,12 @@ modeButtons.forEach(button => {
     modeButtons.forEach(btn => btn.classList.remove('is-active'));
     button.classList.add('is-active');
     currentMode = button.dataset.mode;
+    updateDetails();
     render();
   });
 });
 
 sourceText.addEventListener('input', render);
-numbersAsWordsToggle.addEventListener('change', render);
 
 clearBtn.addEventListener('click', () => {
   sourceText.value = '';
@@ -291,4 +180,5 @@ sampleBtn.addEventListener('click', () => {
   render();
 });
 
+updateDetails();
 render();
